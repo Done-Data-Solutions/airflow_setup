@@ -102,10 +102,10 @@ if ! sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/airflow" users list | awk '{
     --password "${AIRFLOW_ADMIN_PASS}"
 fi
 
-export AIRFLOW_CFG_SQL_ALCHEMY_CONN="${SQL_ALCHEMY_CONN}"
-export AIRFLOW_CFG_DAGS_FOLDER="${AIRFLOW_DAGS}"
-
-sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/python" <<'PY'
+sudo -u "${AIRFLOW_USER}" env \
+  AIRFLOW_CFG_SQL_ALCHEMY_CONN="${SQL_ALCHEMY_CONN}" \
+  AIRFLOW_CFG_DAGS_FOLDER="${AIRFLOW_DAGS}" \
+  "${AIRFLOW_VENV}/bin/python" <<'PY'
 import configparser
 import os
 from pathlib import Path
