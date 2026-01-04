@@ -3,6 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ENV_FILE="${AIRFLOW_ENV_FILE:-${SCRIPT_DIR}/.env}"
+REQUIREMENTS_FILE="${AIRFLOW_REQUIREMENTS_FILE:-${SCRIPT_DIR}/requirements.txt}"
 
 if [ -f "${ENV_FILE}" ]; then
   set -a
@@ -58,9 +59,14 @@ sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install --upgrade pip setupt
 PY_VER="$("${AIRFLOW_VENV}/bin/python" -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")')"
 CONSTRAINTS_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PY_VER}.txt"
 
-sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install \
-  "apache-airflow[postgres]==${AIRFLOW_VERSION}" \
-  --constraint "${CONSTRAINTS_URL}"
+if [ -f "${REQUIREMENTS_FILE}" ]; then
+  sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install -r "${REQUIREMENTS_FILE}" \
+    --constraint "${CONSTRAINTS_URL}"
+else
+  sudo -u "${AIRFLOW_USER}" "${AIRFLOW_VENV}/bin/pip" install \
+    "apache-airflow[postgres]==${AIRFLOW_VERSION}" \
+    --constraint "${CONSTRAINTS_URL}"
+fi
 
 if ! sudo -u postgres psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='${AIRFLOW_DB_USER}'" | grep -q 1; then
   sudo -u postgres psql -c "CREATE USER ${AIRFLOW_DB_USER} WITH PASSWORD '${AIRFLOW_DB_PASS}'"
